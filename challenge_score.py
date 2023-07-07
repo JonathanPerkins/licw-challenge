@@ -8,6 +8,7 @@
 import argparse
 import textwrap
 import re
+from enum import Enum
 
 # Basic points letters/callsigns/ids (1 point if not in this list)
 # N.B: only one from this list allowed per QSO
@@ -175,6 +176,104 @@ class LicwChallenge():
         self._total_score += len(spc)
         print(f"num SPCs={len(spc)} total={self._total_score}")
 
+class AdifParser():
+    ''' Class to parse an ADIF file '''
+
+    def __init__(self):
+        ''' Constructor '''
+        self._started = False
+        self._header_done = False
+        # For parsing individual elements
+        self._buffer = ''
+        self._required_length = 0
+        self._string_name = ''
+        self.State = Enum('State', ['WAIT_START', 'WAIT_END', 'DONE_TAG', 'TEXT', 'DONE_TEXT'])
+        self._state = self.State.WAIT_START
+
+    def _update_buffer(self, char):
+        ''' Process the next character '''
+        if self._state == self.State.WAIT_START:
+            # Skipping characters, waiting for a '<'
+            if char == '<':
+                self._state = self.State.WAIT_END
+        elif self._state == self.State.WAIT_END:
+            # Appending to the buffer, waiting for a '>'
+            if char == '>':
+                self._state = self.State.DONE_TAG
+            else:
+                self._buffer += char
+        elif self._state == self.State.TEXT:
+            # Building a string of required length
+            self._buffer += char
+            if len(self._buffer) == self._required_length:
+                self._state = self.State.DONE_TEXT
+
+    def _reset_buffer_for_tag(self):
+        ''' Resets the buffer start building a <ADIF:n> style tag '''
+        self._buffer = ''
+        self._state = self.State.WAIT_START
+
+    def _reset_buffer_for_string(self, required_length, name):
+        ''' Resets the buffer for reading a text string '''
+        self._buffer = ''
+        self._required_length = required_length
+        self._string_name = name
+        self._state = self.State.TEXT
+    
+    def reset_parser(self):
+        ''' Reset the parser '''
+        self._started = False
+        self._header_done = False
+
+    def parse(self, string):
+        ''' Incremental string parser - normally this function 
+            would be called for each line read from the ADIF file
+        '''
+        for char in string.upper():
+            # Is this the first call to parse a file?
+            if not self._started:
+                # Determine if a header is present by examing the first
+                # character. ADIF spec says header present if not a '<'.
+                if char == '<':
+                    self._header_done = True
+                self._started = True
+            # Parsing header?
+            if not self._header_done:
+                # Skip header contents until <EOH> is found
+                self._update_buffer(char)
+                if self._state == self.State.DONE_TAG:
+                    # Found EOH?
+                    if self._buffer == 'EOH':
+                        self._header_done = True
+                    # Search for another tag
+                    # TODO may need to handle '<' in text? Use length param to skip?
+                    self._reset_buffer_for_tag()
+            else:
+                # Parsing the body of the ADIF - each record ends in <EOR>
+                self._update_buffer(char)
+                if self._state == self.State.DONE_TAG:
+                    # Found EOH?
+                    if self._buffer == 'EOR':
+                        print('end of record')
+                    else:
+                        # Split tag into NAME:LENGTH pairs
+                        tag = self._buffer.split(':')
+                        if len(tag) == 2:
+                            try:
+                                field_length = int(tag[1])
+                                self._reset_buffer_for_string(field_length, tag[0])
+                            except ValueError:
+                                print("tag[1] did not contain a number!")
+                        else:    
+                            print(f"unknown tag: {self._buffer}")
+                    if self._state == self.State.DONE_TAG:
+                        self._reset_buffer_for_tag()
+                elif self._state == self.State.DONE_TEXT:
+                    print(f"{self._string_name}: {self._buffer}")
+                    self._reset_buffer_for_tag()
+
+
+
 # *******************************************************************
 #  Methods
 # *******************************************************************
@@ -187,6 +286,9 @@ def parse_logfile(filenames):
     #   <fieldname:length:optional type>data
     # Optional header is present if the first character is not a '<'.
 
+    challenge = LicwChallenge()
+    adif = AdifParser()
+
     # Parsing strategy: read file one line at a time, stripping
     # trailing newlines and then pass those to my stream parser.
     for filename in filenames:
@@ -196,7 +298,9 @@ def parse_logfile(filenames):
                 if not line:
                     break
                 # Strip any trailing newline and pass to parser
-                print(line.rstrip('\n'))
+                adif.parse(line.rstrip('\n'))
+
+    challenge.calculate_score()
 
 
 # *******************************************************************
