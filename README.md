@@ -35,6 +35,34 @@ Or on Windows:
 python challenge_score.py <adif log file name>
 ```
 
+Example:
+
+```
+jonathan@Mac-mini licw-challenge % ./challenge_score.py test/g4ivv_apr_23.adif
+
+--------------------------------------------------------------------
+IZ5CNC     Mark       ITA     2524  20m  1 plus 2 bonus points
+W2ITT      Rob         NY    263is  20m  2 plus 3 bonus points
+K2GV       Jerry       NY     004i  15m  2 points
+KB4QQJ     Randy       NC   1086is  15m  2 plus 3 bonus points
+WB2UZE     Howard      NY       2a  15m  2 points
+KB4QQJ     Randy       NC   1086is  20m  2 plus 3 bonus points
+KB4QQJ     Randy       NC   1086is  17m  2 plus 3 bonus points
+K2GV       Jerry       NY     004i  20m  2 points
+WA2AKV     Hal         NY      77i  15m  2 points
+G0POT      Michael    ENG    1071i  40m  2 plus 2 bonus points
+W4CMG      Cathy       TN    899is  20m  2 plus 3 bonus points
+W4EMB      Ed          TN   3459is  20m  2 plus 3 bonus points
+KD2YMM     Kasey       NY    3405a  20m  2 points
+M0MCL      Kevin      ENG     4375  40m  1 plus 2 bonus points
+K9EI       Matt        IN     2467  20m  1 point
+N2WBJ      Rich        NY      890  20m  1 point
+--------------------------------------------------------------------
+
+Number of unique SPCs worked = 6
+Total score = 58
+```
+
 ## TODO
 
 Required before first public release:

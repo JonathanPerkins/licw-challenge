@@ -414,7 +414,7 @@ def parse_logfile(filenames):
     challenge.calculate_score()
 
     # Display a list of the validated QSOs
-    print("--------------------------------------------------------------------")
+    print("\n--------------------------------------------------------------------")
     for qso in challenge.validated_qsos:
         nr = qso.licw_nr
         if qso.bonus_letters:
