@@ -1,5 +1,5 @@
-# licw-challenge
-Python script to parse an ADIF log file and calculate the score for the LICW Challenge
+# LICW Challenge scoring
+Python script to parse an ADIF log file and calculate the score for the LICW Challenge (see https://licwchallenge.org for furtrher details)
 
 ## Log entry requirements
 
@@ -40,7 +40,6 @@ python challenge_score.py <adif log file name>
 Required before first public release:
 
 * Add support for F2F, 2xF2F and first QSOs
-* Add one QSO per band validation (use highest score if duplicates)
 * Add better error handling
 
 Not essential, but possibly nice to have:

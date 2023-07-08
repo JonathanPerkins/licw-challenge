@@ -80,6 +80,21 @@ class Qso():
         return self._spc
 
     @property
+    def name(self):
+        ''' Getter for name '''
+        return self._name
+
+    @property
+    def licw_nr(self):
+        ''' Getter for LICW number '''
+        return self._licw_nr
+
+    @property
+    def bonus_letters(self):
+        ''' Getter for bonus letters '''
+        return self._bonus_letters
+
+    @property
     def points(self):
         ''' Getter for base points '''
         return self._points
@@ -88,6 +103,11 @@ class Qso():
     def bonus(self):
         ''' Getter for bonus points '''
         return self._bonus
+
+    @property
+    def total(self):
+        ''' Getter for total points '''
+        return self._points + self._bonus
 
     def load_qso(self, qso_fields):
         ''' Load required QSO data fields from the given 
@@ -308,11 +328,12 @@ class LicwChallenge():
 
     def __init__(self):
         ''' Constructor '''
-        # Array of valid QSO objects
-        self._qso_list = []
+        # Dictionary of valid QSO objects
+        self._qso_list = {}
         # Calculated scores
         self._num_qsos = 0
         self._total_score = 0
+        self._num_spc = 0
 
     @property
     def num_qsos(self):
@@ -320,25 +341,42 @@ class LicwChallenge():
         return self._num_qsos
 
     @property
+    def num_spc(self):
+        ''' Getter for number of unique SPCs '''
+        return self._num_spc
+
+    @property
     def total_score(self):
         ''' Getter for total score '''
         return self._total_score
 
+    @property
+    def validated_qsos(self):
+        ''' Getter for a list of validated QSOs '''
+        return self._qso_list.values()
+
     def add_qso(self, qso):
         ''' Add a QSO to the challenge '''
-        self._qso_list.append(qso)
+        # The callsign+band tuple must be unique
+        callsign_band = (qso.callsign, qso.band)
+        # Already worked this station on this band?
+        if callsign_band in self._qso_list:
+            # Choose the QSO with the highest score
+            if qso.total > self._qso_list[callsign_band].total:
+                self._qso_list[callsign_band] = qso
+        else:
+            self._qso_list[callsign_band] = qso
 
     def calculate_score(self):
         ''' Calculate the challenge score '''
         self._total_score = 0
         spc = {}
-        for qso in self._qso_list:
-            self._total_score += qso.points
-            self._total_score += qso.bonus
+        for qso in self._qso_list.values():
+            self._total_score += qso.total
             spc[qso.spc] = True
+        self._num_spc = len(spc)
         # Plus one point per SPC    
-        self._total_score += len(spc)
-        print(f"num SPCs={len(spc)} total={self._total_score}")
+        self._total_score += self._num_spc
 
 # *******************************************************************
 #  Functions
@@ -367,13 +405,33 @@ def parse_logfile(filenames):
                 # Strip any trailing newline and pass to parser
                 adif.parse(line.rstrip('\n'))
     
-    # Pass each of the valid QSOs to the challenge scorer
+    # Pass each of the valid candidate QSOs to the challenge scorer,
+    # which will handle duplicates.
     for qso in qsos:
         challenge.add_qso(qso)
 
     # And calculate the total score
     challenge.calculate_score()
 
+    # Display a list of the validated QSOs
+    print("--------------------------------------------------------------------")
+    for qso in challenge.validated_qsos:
+        nr = qso.licw_nr
+        if qso.bonus_letters:
+            nr += qso.bonus_letters.lower()
+        bonus = ''
+        if qso.bonus > 0:
+            bonus = f" plus {qso.bonus} bonus"
+        if qso.total > 1:
+            plural = 's'
+        else:
+            plural = ''
+        print(f"{qso.callsign:10} {qso.name:10} {qso.spc:>3} {nr:>8}"
+              f"{qso.band:>5}  {qso.points}{bonus} point{plural}")
+    print("--------------------------------------------------------------------")
+    print(f"\nNumber of unique SPCs worked = {challenge.num_spc}")
+    print(f"Total score = {challenge.total_score}\n")
+    
 
 # *******************************************************************
 #  Main
