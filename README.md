@@ -102,6 +102,14 @@ Total of 16 QSOs with 6 unique SPCs
 Total score = 58
 ```
 
+## FAQ
+
+__Q__: I worked G0POT on 40m and then later a second time when he was a special station.
+Do I need to go back in my log and remove the first contacts LICW[] data?
+
+__A__: No, the program handles duplicates contacts on any given band and it will automatically
+select the QSO with the highest score. So just log all LICW Challenge QSOs you make.
+
 ## TODO
 
 Not essential, but possibly nice to have:
