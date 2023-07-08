@@ -45,6 +45,8 @@ The program can optionally filter QSOs by challenge quarter, so that it can be g
 a large ADIF file and just score the quarter of interest. You can either chose the
 current quarter or specify which quarter you require, e.g:
 
+Process score for the current quarter:
+
 ```
 ./challenge_score.py -q now all_qsos.adif
 ```
@@ -91,7 +93,6 @@ Required before first public release:
 
 Not essential, but possibly nice to have:
 
-* Allow user to specify valid date range, so the user doesn't have to export an ADIF log file limited to the activity period.
 * Only allow QSOs on valid bands
 * Support for VBand QSOs? How would this be done?
 
