@@ -141,43 +141,9 @@ class Qso():
                 self._bonus += BONUS['DX']
             # TODO add support for first QSO
 
-
-class LicwChallenge():
-    ''' Class representing a LICW challenge '''
-
-    def __init__(self):
-        ''' Constructor '''
-        # Array of valid QSO objects
-        self._qso_list = []
-        # Calculated scores
-        self._num_qsos = 0
-        self._total_score = 0
-
-    @property
-    def num_qsos(self):
-        ''' Getter for number of QSOs '''
-        return self._num_qsos
-
-    @property
-    def total_score(self):
-        ''' Getter for total score '''
-        return self._total_score
-
-    def add_qso(self, qso):
-        ''' Add a QSO to the challenge '''
-        self._qso_list.append(qso)
-
-    def calculate_score(self):
-        ''' Calculate the challenge score '''
-        self._total_score = 0
-        spc = {}
-        for qso in self._qso_list:
-            self._total_score += qso.points
-            self._total_score += qso.bonus
-            spc[qso.spc] = True
-        # Plus one point per SPC    
-        self._total_score += len(spc)
-        print(f"num SPCs={len(spc)} total={self._total_score}")
+# *******************************************************************
+#  ADIF parser
+# *******************************************************************
 
 class AdiDataSpecifierParser():
     ''' Class to parse an ADI Data Specifier, character by character.
@@ -333,9 +299,49 @@ class AdifParser():
                 # ADI specifier complete, start on next one
                 self._adi_parser.reset()
 
+# *******************************************************************
+#  Challenge scorer
+# *******************************************************************
+
+class LicwChallenge():
+    ''' Class representing a LICW challenge '''
+
+    def __init__(self):
+        ''' Constructor '''
+        # Array of valid QSO objects
+        self._qso_list = []
+        # Calculated scores
+        self._num_qsos = 0
+        self._total_score = 0
+
+    @property
+    def num_qsos(self):
+        ''' Getter for number of QSOs '''
+        return self._num_qsos
+
+    @property
+    def total_score(self):
+        ''' Getter for total score '''
+        return self._total_score
+
+    def add_qso(self, qso):
+        ''' Add a QSO to the challenge '''
+        self._qso_list.append(qso)
+
+    def calculate_score(self):
+        ''' Calculate the challenge score '''
+        self._total_score = 0
+        spc = {}
+        for qso in self._qso_list:
+            self._total_score += qso.points
+            self._total_score += qso.bonus
+            spc[qso.spc] = True
+        # Plus one point per SPC    
+        self._total_score += len(spc)
+        print(f"num SPCs={len(spc)} total={self._total_score}")
 
 # *******************************************************************
-#  Methods
+#  Functions
 # *******************************************************************
 
 def parse_logfile(filenames):
