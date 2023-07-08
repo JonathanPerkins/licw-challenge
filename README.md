@@ -4,7 +4,9 @@ Python script to parse an ADIF log file and calculate the score for the LICW Cha
 ## Log entry requirements
 
 In order to add the extra LICW Challenge data, it is necessary when logging a challenge QSO
-that the special text is added into the QSO note/comment field in your logging program.
+that a special text field is added into the QSO note/comment field in your logging program.
+This can be added to any other notes you enter for this QSO and can be at any position in
+the note field.
 
 The format of this special text string is:
 
