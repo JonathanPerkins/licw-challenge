@@ -8,7 +8,7 @@ that a special text field is added into the QSO note/comment field in your loggi
 This can be added to any other notes you enter for this QSO and can be at any position in
 the note field and is case insensitive.
 
-The format of this special text string is:
+The minimum format of this special text string is:
 
 ```
 LICW[SPC:1234xx]
@@ -19,6 +19,18 @@ Where:
 * SPC = 2 or 3 character state/province/country code
 * 1234 = the LICW membership number received from the other station
 * xx = optional one or more bonus letters received from the other station
+
+The special text string can be extended to support additional special bonus points, by
+adding an optional third section containing a comma seperated list of bonus conditions:
+
+```
+LICW[SPC:1234xx:EXTRA1,EXTRA2,...]
+```
+Where the extra fields can be one or more of:
+
+* FIRST - for working a station on their first ever CW QSO
+* F2F   - for making a QSO from a face to face meeting
+* 2xF2F - for making a QSO with face to face meetings at each end
 
 The remaining data for calculating scores is obtained from the normal QSO ADIF records.
 
@@ -86,10 +98,6 @@ Total score = 58
 ```
 
 ## TODO
-
-Required before first public release:
-
-* Add support for F2F, 2xF2F and first QSOs
 
 Not essential, but possibly nice to have:
 

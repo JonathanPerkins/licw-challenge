@@ -24,7 +24,7 @@ POINTS = {
     'M': 2,
     'A': 2,
     'F2F': 5,
-    '2xF2F': 10
+    '2XF2F': 10
 }
 
 # Bonus letters/identifiers and their points
@@ -161,7 +161,9 @@ class Qso():
             except ValueError:
                 pass
         # The SPC and LICW number should be found in the comment field,
-        # formatted with optional bonus letters as: LICW[SPC:1234is]
+        # formatted with optional bonus letters and optional 3rd
+        # field list as: LICW[SPC:1234is:FIRST,F2F]
+        extras_list = []
         if 'COMMENT' in qso_fields:
             match = re.search(r'LICW\[(.+)\]', qso_fields['COMMENT'].upper())
             if match:
@@ -175,6 +177,9 @@ class Qso():
                         self._licw_nr = nr_match[1]
                         if nr_match.lastindex > 1:
                             self._bonus_letters = nr_match[2]
+                    # Optional 3rd field present?
+                    if len(licw) == 3:
+                        extras_list = licw[2].split(',')
                 else:
                     raise ChallengeException("invalid LICW field:", licw)
         # A LICW challenge QSO?
@@ -188,16 +193,21 @@ class Qso():
                 if letter in POINTS:
                     if POINTS[letter] > self._points:
                         self._points = POINTS[letter]
-            # TODO add support for F2F
+            for extra in extras_list:
+                if extra in POINTS:
+                    if POINTS[extra] > self._points:
+                        self._points = POINTS[extra]
             # Calculate optional bonus points
             self._bonus = 0
             for letter in self._bonus_letters:
                 if letter in BONUS:
                     self._bonus += BONUS[letter]
+            for extra in extras_list:
+                if extra in BONUS:
+                    self._bonus += BONUS[extra]
             # DX contact?
             if len(self._spc) == 3:
                 self._bonus += BONUS['DX']
-            # TODO add support for first QSO
 
 # *******************************************************************
 #  ADIF parser
@@ -304,10 +314,7 @@ class AdiDataSpecifierParser():
             else:
                 # Name only, no data
                 self._length = 0
-        if self._state == self.State.DONE_TAG or self._state == self.State.DONE_TEXT:
-            return True
-        else:
-            return False
+        return self._state in (self.State.DONE_TAG, self.State.DONE_TEXT)
 
 class AdifParser():
     ''' Class to parse an ADIF file
@@ -546,7 +553,6 @@ def parse_logfile(filenames, quarter):
         number = qso.licw_nr
         if qso.bonus_letters:
             number += qso.bonus_letters.lower()
-        bonus = ''
         if qso.bonus > 0:
             points = f"{qso.points} plus {qso.bonus} bonus"
         else:
