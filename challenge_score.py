@@ -11,6 +11,7 @@ import argparse
 import textwrap
 import re
 from collections import deque
+from datetime import datetime
 from enum import Enum, auto
 
 # Basic points letters/callsigns/ids (1 point if not in this list)
@@ -69,6 +70,7 @@ class Qso():
         ''' Constructor '''
         # These are the minimum fields required for a valid QSO
         # to be scored for the LICW challenge
+        self._date = None
         self._band = None
         self._callsign = None
         self._name = None
@@ -87,8 +89,7 @@ class Qso():
     def is_valid(self):
         ''' Getter to determine if the QSO is valid '''
         # Need all the required fields
-        # print(f"{self._band} {self._callsign} {self._name} {self._spc} {self._licw_nr}")
-        return self._band and self._callsign and self._name and self._spc and self._licw_nr
+        return self._band and self._callsign and self._name and self._spc and self._licw_nr and self._date
 
     @property
     def callsign(self):
@@ -99,6 +100,11 @@ class Qso():
     def band(self):
         ''' Getter for band '''
         return self._band
+
+    @property
+    def date(self):
+        ''' Getter for date '''
+        return self._date
 
     @property
     def spc(self):
@@ -142,12 +148,18 @@ class Qso():
         # Invalidate any previous data
         self._licw_nr = None
         self._bonus_letters = None
+        self._date = None
         if 'BAND' in qso_fields:
             self._band = qso_fields['BAND']
         if 'CALL' in qso_fields:
             self._callsign = qso_fields['CALL']
         if 'NAME' in qso_fields:
             self._name = qso_fields['NAME']
+        if 'QSO_DATE' in qso_fields:
+            try:
+                self._date = int(qso_fields['QSO_DATE'])
+            except ValueError:
+                pass
         # The SPC and LICW number should be found in the comment field,
         # formatted with optional bonus letters as: LICW[SPC:1234is]
         if 'COMMENT' in qso_fields:
@@ -298,7 +310,17 @@ class AdiDataSpecifierParser():
             return False
 
 class AdifParser():
-    ''' Class to parse an ADIF file '''
+    ''' Class to parse an ADIF file
+
+        The ADIF spec (www.adif.org) doesn't seem to restrict a
+        data specifier to be completely defined on one line,
+        so this implements a char-by-char stream parser.
+
+        A data specifier is of the form:
+             <fieldname:length:optional type>data
+
+        An optional header is present if the first character is not a '<'.
+    '''
 
     def __init__(self, qsos_deque):
         ''' Constructor '''
@@ -376,10 +398,14 @@ class AdifParser():
 class LicwChallenge():
     ''' Class representing a LICW challenge '''
 
-    def __init__(self):
+    def __init__(self, start_date, end_date):
         ''' Constructor '''
         # Dictionary of valid QSO objects
         self._qso_list = {}
+        # Start and end date filters (integers, YYYYMMDD)
+        # Either may be None to disable that check.
+        self._start_date = start_date
+        self._end_date = end_date
         # Calculated scores
         self._num_qsos = 0
         self._total_score = 0
@@ -405,17 +431,26 @@ class LicwChallenge():
         ''' Getter for a list of validated QSOs '''
         return self._qso_list.values()
 
-    def add_qso(self, qso):
-        ''' Add a QSO to the challenge '''
-        # The callsign+band tuple must be unique
-        callsign_band = (qso.callsign, qso.band)
-        # Already worked this station on this band?
-        if callsign_band in self._qso_list:
-            # Choose the QSO with the highest score
-            if qso.total > self._qso_list[callsign_band].total:
+    def add_qsos(self, qsos):
+        ''' Add one or more QSOs to the challenge
+        '''
+        for qso in qsos:
+            # Optional date filters
+            if self._start_date:
+                if qso.date < self._start_date:
+                    continue
+            if self._end_date:
+                if qso.date > self._end_date:
+                    continue
+            # The callsign+band tuple must be unique
+            callsign_band = (qso.callsign, qso.band)
+            # Already worked this station on this band?
+            if callsign_band in self._qso_list:
+                # Choose the QSO with the highest score
+                if qso.total > self._qso_list[callsign_band].total:
+                    self._qso_list[callsign_band] = qso
+            else:
                 self._qso_list[callsign_band] = qso
-        else:
-            self._qso_list[callsign_band] = qso
 
     def calculate_score(self):
         ''' Calculate the challenge score '''
@@ -433,16 +468,44 @@ class LicwChallenge():
 #  Functions
 # *******************************************************************
 
-def parse_logfile(filenames):
-    ''' Parse the given ADIF log file(s) '''
-    # The ADIF spec (www.adif.org) doesn't seem to restrict a
-    # data specifier to be completely defined on one line.
-    # A data specifier is of the form:
-    #   <fieldname:length:optional type>data
-    # Optional header is present if the first character is not a '<'.
+def determine_date_range(quarter):
+    ''' Function to determine start and end dates for a given quater.
+        The quater definition may be of 2 formats:
+            now           - the current quarter
+            [1..4]:[year] - quarter number and 2 or 4 digit year
+        Dates are formatted as integers in the format YYYYMMDD
+    '''
+    start = None
+    end = None
+    start_mmdd = [101, 401, 701, 1001]
+    end_mmdd = [331, 630, 930, 1231]
+    # An undefined quarter will remove any date restriction
+    if quarter:
+        if quarter == 'now':
+            # internally we number quarters from zero
+            qnum = int((datetime.now().month - 1) / 3)
+            year = datetime.now().year
+        else:
+            try:
+                qnum, year = quarter.split(':')
+                qnum = int(qnum)
+                if qnum < 1 or qnum > 4:
+                    raise ChallengeException(f"invalid quarter {qnum}:", quarter)
+                # qnum numbers from zero
+                qnum -= 1
+                year = int(year)
+                if year < 100:
+                    year += 2000
+            except ValueError as err:
+                raise ChallengeException(f"invalid quarter {quarter}:", err) from None
+        # Calculate start and end dates for the quarter, YYYYMMDD
+        start = (year * 10000) + start_mmdd[qnum]
+        end = (year * 10000) + end_mmdd[qnum]
+    return start, end
 
+def parse_logfile(filenames, quarter):
+    ''' Parse the given ADIF log file(s) '''
     qsos = deque()
-    challenge = LicwChallenge()
     adif = AdifParser(qsos)
 
     # Parsing strategy: read file one line at a time, stripping
@@ -456,15 +519,21 @@ def parse_logfile(filenames):
                 # Strip any trailing newline and pass to parser
                 adif.parse(line.rstrip('\n'))
 
-    # Pass each of the valid candidate QSOs to the challenge scorer,
-    # which will handle duplicates.
-    for qso in qsos:
-        challenge.add_qso(qso)
+    # Determine optional date filters
+    start_date, end_date = determine_date_range(quarter)
+
+    challenge = LicwChallenge(start_date, end_date)
+
+    # Pass the queue of valid LICW challenge QSOs to the challenge
+    # which will apply the cross QSO rules including handling duplicates
+    challenge.add_qsos(qsos)
 
     # And calculate the total score
     challenge.calculate_score()
 
     # Display a list of the validated QSOs
+    if quarter:
+        print(f"\nFor the quarter from {start_date} to {end_date}:")
     print("\n--------------------------------------------------------------------")
     for qso in challenge.validated_qsos:
         number = qso.licw_nr
@@ -477,7 +546,7 @@ def parse_logfile(filenames):
             plural = 's'
         else:
             plural = ''
-        print(f"{qso.callsign:10} {qso.name:10} {qso.spc:>3} {number:>8}"
+        print(f"{qso.date} {qso.callsign:10} {qso.name:10} {qso.spc:>3} {number:>8}"
               f"{qso.band:>5}  {qso.points}{bonus} point{plural}")
     print("--------------------------------------------------------------------")
     print(f"\nTotal of {challenge.num_qsos} QSOs with {challenge.num_spc} unique SPCs")
@@ -489,17 +558,26 @@ def parse_logfile(filenames):
 # *******************************************************************
 
 ARG_PARSER = argparse.ArgumentParser(description=textwrap.dedent('''\
-    Script to parse an ADIF file and calculate a LICW challenge score
+    Script to parse an ADIF file and calculate a LICW challenge score.
+
+    See https://github.com/JonathanPerkins/licw-challenge for full
+    instructions.
     '''),
-                                 formatter_class=argparse.RawTextHelpFormatter)
+    formatter_class=argparse.RawTextHelpFormatter)
 
 # At least one input file required
 ARG_PARSER.add_argument('log_files', metavar='<ADIF log file>', nargs='+')
+
+# Optional arguments
+ARG_PARSER.add_argument('-q', '--quarter',
+                        dest='quarter', default=None,
+                        metavar='<now|[1..4]:[year]>',
+                        help="specify which year quarter to extract QSOs from (default no date limit)")
 
 ARGS = ARG_PARSER.parse_args()
 
 try:
     # Process log file
-    parse_logfile(ARGS.log_files)
+    parse_logfile(ARGS.log_files, ARGS.quarter)
 except ChallengeException as ex:
     print(f"Error: {ex.context}: {ex} {ex.additional}")

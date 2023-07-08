@@ -1,5 +1,5 @@
 # LICW Challenge scoring
-Python script to parse an ADIF log file and calculate the score for the LICW Challenge (see https://licwchallenge.org for more details)
+This is a Python script to parse an ADIF log file and calculate the score for the LICW Challenge (see https://licwchallenge.org for more details)
 
 ## Log entry requirements
 
@@ -39,7 +39,23 @@ Or on Windows:
 python challenge_score.py <adif log file name>
 ```
 
-Example:
+### Optional parameters
+
+The program can optionally filter QSOs by challenge quarter, so that it can be given
+a large ADIF file and just score the quarter of interest. You can either chose the
+current quarter or specify which quarter you require, e.g:
+
+```
+./challenge_score.py -q now all_qsos.adif
+```
+
+Or for the second quarter 2023:
+
+```
+./challenge_score.py -q 2:23 all_qsos.adif
+```
+
+### Example
 
 ```
 jonathan@Mac-mini licw-challenge % ./challenge_score.py test/g4ivv_apr_23.adif
