@@ -8,6 +8,7 @@
 import argparse
 import textwrap
 import re
+from collections import deque
 from enum import Enum, auto
 
 # Basic points letters/callsigns/ids (1 point if not in this list)
@@ -60,6 +61,7 @@ class Qso():
     def is_valid(self):
         ''' Getter to determine if the QSO is valid '''
         # Need all the required fields
+        # print(f"{self._band} {self._callsign} {self._name} {self._spc} {self._licw_nr}")
         return self._band and self._callsign and self._name and self._spc and self._licw_nr
     
     @property
@@ -94,20 +96,17 @@ class Qso():
         # Invalidate any previous data
         self._licw_nr = None
         self._bonus_letters = None
-        if qso_fields['band']:
-            self._callsign = qso_fields['band']
-        if qso_fields['callsign']:
-            self._callsign = qso_fields['callsign']
-        if qso_fields['name']:
-            self._name = qso_fields['name']
-        if qso_fields['spc']:
-            self._callsign = qso_fields['spc']
+        if 'BAND' in qso_fields:
+            self._band = qso_fields['BAND']
+        if 'CALL' in qso_fields:
+            self._callsign = qso_fields['CALL']
+        if 'NAME' in qso_fields:
+            self._name = qso_fields['NAME']
         # The SPC and LICW number should be found in the comment field,
         # formatted with optional bonus letters as: LICW[SPC:1234is]
-        if qso_fields['comment']:
-            match = re.search(r'LICW\[(.+)\]', qso_fields['comment'])
+        if 'COMMENT' in qso_fields:
+            match = re.search(r'LICW\[(.+)\]', qso_fields['COMMENT'].upper())
             if match:
-                print(match.group(1))
                 # Parse out the LICW data
                 licw = match[1].split(':')
                 if len(licw) == 2:
@@ -118,25 +117,29 @@ class Qso():
                         self._licw_nr = nr_match[1]
                         if nr_match.lastindex > 1:
                             self._bonus_letters = nr_match[2]
-        # Calculate the base points - only one entry from POINTS
-        # allowed, choose the one with the highest value
-        self._points = 1
-        if self._callsign in POINTS:
-            self._points = POINTS[self._callsign]
-        for letter in self._bonus_letters:
-            if letter in POINTS:
-                if POINTS[letter] > self._points:
-                    self._points = POINTS[letter]
-        # TODO add support for F2F
-        # Calculate optional bonus points
-        self._bonus = 0
-        for letter in self._bonus_letters:
-            if letter in BONUS:
-                self._bonus += BONUS[letter]
-        # DX contact?
-        if len(self._spc) == 3:
-            self._bonus += BONUS['DX']
-        # TODO add support for first QSO
+                else:
+                    print(f"Error: invalid LICW field: {licw}")
+        # A LICW challenge QSO?
+        if self._licw_nr:
+            # Calculate the base points - only one entry from POINTS
+            # allowed, choose the one with the highest value
+            self._points = 1
+            if self._callsign in POINTS:
+                self._points = POINTS[self._callsign]
+            for letter in self._bonus_letters:
+                if letter in POINTS:
+                    if POINTS[letter] > self._points:
+                        self._points = POINTS[letter]
+            # TODO add support for F2F
+            # Calculate optional bonus points
+            self._bonus = 0
+            for letter in self._bonus_letters:
+                if letter in BONUS:
+                    self._bonus += BONUS[letter]
+            # DX contact?
+            if len(self._spc) == 3:
+                self._bonus += BONUS['DX']
+            # TODO add support for first QSO
 
 
 class LicwChallenge():
@@ -203,8 +206,8 @@ class AdiDataSpecifierParser():
 
     @property
     def name(self):
-        ''' Getter for field name '''
-        return self._name
+        ''' Getter for field name, converted to uppercase  '''
+        return self._name.upper()
     
     @property
     def length(self):
@@ -285,11 +288,13 @@ class AdiDataSpecifierParser():
 class AdifParser():
     ''' Class to parse an ADIF file '''
 
-    def __init__(self):
+    def __init__(self, qsos_deque):
         ''' Constructor '''
         self._started = False
         self._header_done = False
         self._adi_parser = AdiDataSpecifierParser()
+        self._qsos = qsos_deque
+        self._current_qso = {}
     
     def reset_parser(self):
         ''' Reset the parser '''
@@ -300,7 +305,7 @@ class AdifParser():
         ''' Incremental string parser - normally this function 
             would be called for each line read from the ADIF file
         '''
-        for char in string.upper():
+        for char in string:
             # Is this the first call to parse a file?
             if not self._started:
                 # Determine if a header is present by examing the first
@@ -318,9 +323,13 @@ class AdifParser():
                 else:
                     # Each QSO record is complete on 'EOR'
                     if self._adi_parser.name == 'EOR':
-                        print('qso')
-                    else:
-                        print(f'{self._adi_parser.name}: {self._adi_parser.data}')
+                        # Create a QSO object and if valid place on queue
+                        qso = Qso(self._current_qso)
+                        if qso.is_valid:
+                            self._qsos.append(qso)
+                        self._current_qso.clear()
+                    elif self._adi_parser.length > 0:
+                        self._current_qso[self._adi_parser.name] = self._adi_parser.data
                 # ADI specifier complete, start on next one
                 self._adi_parser.reset()
 
@@ -337,8 +346,9 @@ def parse_logfile(filenames):
     #   <fieldname:length:optional type>data
     # Optional header is present if the first character is not a '<'.
 
+    qsos = deque()
     challenge = LicwChallenge()
-    adif = AdifParser()
+    adif = AdifParser(qsos)
 
     # Parsing strategy: read file one line at a time, stripping
     # trailing newlines and then pass those to my stream parser.
@@ -350,7 +360,12 @@ def parse_logfile(filenames):
                     break
                 # Strip any trailing newline and pass to parser
                 adif.parse(line.rstrip('\n'))
+    
+    # Pass each of the valid QSOs to the challenge scorer
+    for qso in qsos:
+        challenge.add_qso(qso)
 
+    # And calculate the total score
     challenge.calculate_score()
 
 
