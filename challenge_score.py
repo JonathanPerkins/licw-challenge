@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 
+'''
 #************************************************
 # Program to read an ADIF logfile and
 # calculate the score for the LICW challenge.
 #************************************************
+'''
 
 import argparse
 import textwrap
@@ -36,6 +38,30 @@ BONUS = {
 #  Classes
 # *******************************************************************
 
+class ChallengeException(Exception):
+    ''' Exception for script errors '''
+    def __init__(self, value, additional='', context=''):
+        self._context = context
+        self._additional = additional
+        super(Exception, self).__init__(value)
+
+    def add_context(self, context_str):
+        ''' Add a further context string to the exception arguments '''
+        if not self._context:
+            self._context = context_str
+        else:
+            self._context = f"{context_str}: {self._context}"
+
+    @property
+    def context(self):
+        ''' Getter for context '''
+        return self._context
+
+    @property
+    def additional(self):
+        ''' Getter for additional info '''
+        return self._additional
+
 class Qso():
     ''' Class representing a QSO '''
 
@@ -56,14 +82,14 @@ class Qso():
         # Parse the optional QSO fields
         if qso_fields:
             self.load_qso(qso_fields)
-        
+
     @property
     def is_valid(self):
         ''' Getter to determine if the QSO is valid '''
         # Need all the required fields
         # print(f"{self._band} {self._callsign} {self._name} {self._spc} {self._licw_nr}")
         return self._band and self._callsign and self._name and self._spc and self._licw_nr
-    
+
     @property
     def callsign(self):
         ''' Getter for callsign '''
@@ -110,7 +136,7 @@ class Qso():
         return self._points + self._bonus
 
     def load_qso(self, qso_fields):
-        ''' Load required QSO data fields from the given 
+        ''' Load required QSO data fields from the given
             dictionary of QSO elements extracted from log file.
         '''
         # Invalidate any previous data
@@ -129,7 +155,7 @@ class Qso():
             if match:
                 # Parse out the LICW data
                 licw = match[1].split(':')
-                if len(licw) == 2:
+                if len(licw) > 1:
                     self._spc = licw[0]
                     # Parse the LICW number into number and bonus letters
                     nr_match = re.match(r'(\d+)([a-zA-Z]*)', licw[1])
@@ -138,7 +164,7 @@ class Qso():
                         if nr_match.lastindex > 1:
                             self._bonus_letters = nr_match[2]
                 else:
-                    print(f"Error: invalid LICW field: {licw}")
+                    raise ChallengeException("invalid LICW field:", licw)
         # A LICW challenge QSO?
         if self._licw_nr:
             # Calculate the base points - only one entry from POINTS
@@ -173,13 +199,13 @@ class AdiDataSpecifierParser():
             F = case independant field name
             L = data length (optional, zero if not present)
             T = data type inicator (optional, text if not present)
-            D = data of length L  
+            D = data of length L
     '''
     class State(Enum):
         ''' Enum for parser state '''
         WAIT_START = auto(),
         WAIT_END = auto(),
-        DONE_TAG = auto(), 
+        DONE_TAG = auto(),
         TEXT = auto(),
         DONE_TEXT = auto()
 
@@ -194,12 +220,12 @@ class AdiDataSpecifierParser():
     def name(self):
         ''' Getter for field name, converted to uppercase  '''
         return self._name.upper()
-    
+
     @property
     def length(self):
         ''' Getter for data length (may be zero) '''
         return self._length
-    
+
     @property
     def data(self):
         ''' Getter for the optional data '''
@@ -261,9 +287,9 @@ class AdiDataSpecifierParser():
                     if data_length > 0:
                         self._reset_buffer_for_string(data_length)
                 except ValueError:
-                    print("fields[1] did not contain a number!")
-                # TODO add support for types
-            else:    
+                    raise ChallengeException("invalid ADI length field: ", self._buffer) from None
+                # TODO add support for types? Not actually needed for this application
+            else:
                 # Name only, no data
                 self._length = 0
         if self._state == self.State.DONE_TAG or self._state == self.State.DONE_TEXT:
@@ -281,14 +307,33 @@ class AdifParser():
         self._adi_parser = AdiDataSpecifierParser()
         self._qsos = qsos_deque
         self._current_qso = {}
-    
+        # A count of all QSO records seen, regardless
+        # of whether a challenge QSO or not. Helpful
+        # for indicating where an error has occured.
+        self._all_qso_count = 1
+
+    def _get_key_qso_parts(self):
+        ''' Internal helper function to dump to a string
+            key QSO parts that might help identify a bad record
+            in the log file
+        '''
+        info = ''
+        if 'CALL' in self._current_qso:
+            info += f"{self._current_qso['CALL']} "
+        if 'QSO_DATE' in self._current_qso:
+            info += f"on {self._current_qso['QSO_DATE']} "
+        if 'TIME_ON' in self._current_qso:
+            info += f"at {self._current_qso['TIME_ON']} "
+        return info.strip()
+
     def reset_parser(self):
         ''' Reset the parser '''
         self._started = False
         self._header_done = False
+        self._all_qso_count = 1
 
     def parse(self, string):
-        ''' Incremental string parser - normally this function 
+        ''' Incremental string parser - normally this function
             would be called for each line read from the ADIF file
         '''
         for char in string:
@@ -300,24 +345,29 @@ class AdifParser():
                     self._header_done = True
                 self._started = True
             # Pass the character into the ADI data specifier parser
-            if self._adi_parser.parse_char(char):
-                # Parsing header?
-                if not self._header_done:
-                    # Skip header contents until <EOH> is found
-                    if self._adi_parser.name == 'EOH':
-                        self._header_done = True
-                else:
-                    # Each QSO record is complete on 'EOR'
-                    if self._adi_parser.name == 'EOR':
-                        # Create a QSO object and if valid place on queue
-                        qso = Qso(self._current_qso)
-                        if qso.is_valid:
-                            self._qsos.append(qso)
-                        self._current_qso.clear()
-                    elif self._adi_parser.length > 0:
-                        self._current_qso[self._adi_parser.name] = self._adi_parser.data
-                # ADI specifier complete, start on next one
-                self._adi_parser.reset()
+            try:
+                if self._adi_parser.parse_char(char):
+                    # Parsing header?
+                    if not self._header_done:
+                        # Skip header contents until <EOH> is found
+                        if self._adi_parser.name == 'EOH':
+                            self._header_done = True
+                    else:
+                        # Each QSO record is complete on 'EOR'
+                        if self._adi_parser.name == 'EOR':
+                            # Create a QSO object and if valid place on queue
+                            qso = Qso(self._current_qso)
+                            if qso.is_valid:
+                                self._qsos.append(qso)
+                            self._current_qso.clear()
+                            self._all_qso_count += 1
+                        elif self._adi_parser.length > 0:
+                            self._current_qso[self._adi_parser.name] = self._adi_parser.data
+                    # ADI specifier complete, start on next one
+                    self._adi_parser.reset()
+            except ChallengeException as err:
+                err.add_context(f"In QSO record #{self._all_qso_count} with {self._get_key_qso_parts()}")
+                raise
 
 # *******************************************************************
 #  Challenge scorer
@@ -375,7 +425,8 @@ class LicwChallenge():
             self._total_score += qso.total
             spc[qso.spc] = True
         self._num_spc = len(spc)
-        # Plus one point per SPC    
+        self._num_qsos = len(self._qso_list)
+        # Plus one point per SPC
         self._total_score += self._num_spc
 
 # *******************************************************************
@@ -404,7 +455,7 @@ def parse_logfile(filenames):
                     break
                 # Strip any trailing newline and pass to parser
                 adif.parse(line.rstrip('\n'))
-    
+
     # Pass each of the valid candidate QSOs to the challenge scorer,
     # which will handle duplicates.
     for qso in qsos:
@@ -416,9 +467,9 @@ def parse_logfile(filenames):
     # Display a list of the validated QSOs
     print("\n--------------------------------------------------------------------")
     for qso in challenge.validated_qsos:
-        nr = qso.licw_nr
+        number = qso.licw_nr
         if qso.bonus_letters:
-            nr += qso.bonus_letters.lower()
+            number += qso.bonus_letters.lower()
         bonus = ''
         if qso.bonus > 0:
             bonus = f" plus {qso.bonus} bonus"
@@ -426,12 +477,12 @@ def parse_logfile(filenames):
             plural = 's'
         else:
             plural = ''
-        print(f"{qso.callsign:10} {qso.name:10} {qso.spc:>3} {nr:>8}"
+        print(f"{qso.callsign:10} {qso.name:10} {qso.spc:>3} {number:>8}"
               f"{qso.band:>5}  {qso.points}{bonus} point{plural}")
     print("--------------------------------------------------------------------")
-    print(f"\nNumber of unique SPCs worked = {challenge.num_spc}")
+    print(f"\nTotal of {challenge.num_qsos} QSOs with {challenge.num_spc} unique SPCs")
     print(f"Total score = {challenge.total_score}\n")
-    
+
 
 # *******************************************************************
 #  Main
@@ -447,5 +498,8 @@ ARG_PARSER.add_argument('log_files', metavar='<ADIF log file>', nargs='+')
 
 ARGS = ARG_PARSER.parse_args()
 
-# Process log file
-parse_logfile(ARGS.log_files)
+try:
+    # Process log file
+    parse_logfile(ARGS.log_files)
+except ChallengeException as ex:
+    print(f"Error: {ex.context}: {ex} {ex.additional}")

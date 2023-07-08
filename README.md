@@ -24,7 +24,7 @@ The remaining data for calculating scores is obtained from the normal QSO ADIF r
 
 ## Usage
 
-The challenge scoring program is a command line script requiring Python 3 with its 
+The challenge scoring program is a command line script requiring Python 3 with its
 default libraries; there should be no need to install anything extra.
 
 On Linux/MacOS:
@@ -63,7 +63,7 @@ K9EI       Matt        IN     2467  20m  1 point
 N2WBJ      Rich        NY      890  20m  1 point
 --------------------------------------------------------------------
 
-Number of unique SPCs worked = 6
+Total of 16 QSOs with 6 unique SPCs
 Total score = 58
 ```
 
@@ -72,7 +72,6 @@ Total score = 58
 Required before first public release:
 
 * Add support for F2F, 2xF2F and first QSOs
-* Add better error handling
 
 Not essential, but possibly nice to have:
 
