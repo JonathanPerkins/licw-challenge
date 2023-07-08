@@ -1,5 +1,5 @@
 # LICW Challenge scoring
-Python script to parse an ADIF log file and calculate the score for the LICW Challenge (see https://licwchallenge.org for furtrher details)
+Python script to parse an ADIF log file and calculate the score for the LICW Challenge (see https://licwchallenge.org for more details)
 
 ## Log entry requirements
 
@@ -18,7 +18,9 @@ Where:
 
 * SPC = 2 or 3 character state/province/country code
 * 1234 = the LICW membership number received from the other station
-* xx = optional one or more bonus letters received from the otehr station
+* xx = optional one or more bonus letters received from the other station
+
+The remaining data for calculating scores is obtained from the normal QSO ADIF records.
 
 ## Usage
 
@@ -74,7 +76,7 @@ Required before first public release:
 
 Not essential, but possibly nice to have:
 
-* Allow user to specify valid date range, so a larger ADIF log file can be parsed.
+* Allow user to specify valid date range, so the user doesn't have to export an ADIF log file limited to the activity period.
 * Only allow QSOs on valid bands
 * Support for VBand QSOs? How would this be done?
 
