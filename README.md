@@ -63,22 +63,22 @@ Or for the second quarter 2023:
 jonathan@Mac-mini licw-challenge % ./challenge_score.py test/g4ivv_apr_23.adif
 
 --------------------------------------------------------------------
-IZ5CNC     Mark       ITA     2524  20m  1 plus 2 bonus points
-W2ITT      Rob         NY    263is  20m  2 plus 3 bonus points
-K2GV       Jerry       NY     004i  15m  2 points
-KB4QQJ     Randy       NC   1086is  15m  2 plus 3 bonus points
-WB2UZE     Howard      NY       2a  15m  2 points
-KB4QQJ     Randy       NC   1086is  20m  2 plus 3 bonus points
-KB4QQJ     Randy       NC   1086is  17m  2 plus 3 bonus points
-K2GV       Jerry       NY     004i  20m  2 points
-WA2AKV     Hal         NY      77i  15m  2 points
-G0POT      Michael    ENG    1071i  40m  2 plus 2 bonus points
-W4CMG      Cathy       TN    899is  20m  2 plus 3 bonus points
-W4EMB      Ed          TN   3459is  20m  2 plus 3 bonus points
-KD2YMM     Kasey       NY    3405a  20m  2 points
-M0MCL      Kevin      ENG     4375  40m  1 plus 2 bonus points
-K9EI       Matt        IN     2467  20m  1 point
-N2WBJ      Rich        NY      890  20m  1 point
+01 Apr 23   IZ5CNC     Mark       ITA    2524   20m  1 plus 2 bonus
+01 Apr 23   W2ITT      Rob         NY   263is   20m  2 plus 3 bonus
+01 Apr 23   K2GV       Jerry       NY    004i   15m  2 points
+01 Apr 23   KB4QQJ     Randy       NC  1086is   15m  2 plus 3 bonus
+01 Apr 23   WB2UZE     Howard      NY      2a   15m  2 points
+02 Apr 23   KB4QQJ     Randy       NC  1086is   20m  2 plus 3 bonus
+02 Apr 23   KB4QQJ     Randy       NC  1086is   17m  2 plus 3 bonus
+04 Apr 23   K2GV       Jerry       NY    004i   20m  2 points
+10 Apr 23   WA2AKV     Hal         NY     77i   15m  2 points
+12 Apr 23   G0POT      Michael    ENG   1071i   40m  2 plus 2 bonus
+03 May 23   W4CMG      Cathy       TN   899is   20m  2 plus 3 bonus
+03 May 23   W4EMB      Ed          TN  3459is   20m  2 plus 3 bonus
+03 May 23   KD2YMM     Kasey       NY   3405a   20m  2 points
+04 May 23   M0MCL      Kevin      ENG    4375   40m  1 plus 2 bonus
+12 May 23   K9EI       Matt        IN    2467   20m  1 point
+07 Jun 23   N2WBJ      Rich        NY     890   20m  1 point
 --------------------------------------------------------------------
 
 Total of 16 QSOs with 6 unique SPCs

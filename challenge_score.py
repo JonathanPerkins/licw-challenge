@@ -11,7 +11,7 @@ import argparse
 import textwrap
 import re
 from collections import deque
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum, auto
 
 # Basic points letters/callsigns/ids (1 point if not in this list)
@@ -541,13 +541,17 @@ def parse_logfile(filenames, quarter):
             number += qso.bonus_letters.lower()
         bonus = ''
         if qso.bonus > 0:
-            bonus = f" plus {qso.bonus} bonus"
-        if qso.total > 1:
-            plural = 's'
+            points = f"{qso.points} plus {qso.bonus} bonus"
         else:
-            plural = ''
-        print(f"{qso.date} {qso.callsign:10} {qso.name:10} {qso.spc:>3} {number:>8}"
-              f"{qso.band:>5}  {qso.points}{bonus} point{plural}")
+            points = f"{qso.points} point"
+            if qso.total > 1:
+                points += 's'
+        # Convert date from YYYYMMDD to YYYY-MM-DD and hence to nice string
+        qso_day = f"{qso.date}"
+        qso_day = f"{qso_day[:4]}-{qso_day[4:6]}-{qso_day[6:8]}"
+        qso_day = date.fromisoformat(qso_day).strftime('%d %b %y')
+        print(f"{qso_day}   {qso.callsign:10} {qso.name:10} {qso.spc:>3}"
+              f"{number:>8} {qso.band:>5}  {points}")
     print("--------------------------------------------------------------------")
     print(f"\nTotal of {challenge.num_qsos} QSOs with {challenge.num_spc} unique SPCs")
     print(f"Total score = {challenge.total_score}\n")
