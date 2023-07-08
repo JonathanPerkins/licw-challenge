@@ -343,7 +343,7 @@ class AdifParser():
         if 'CALL' in self._current_qso:
             info += f"{self._current_qso['CALL']} "
         if 'QSO_DATE' in self._current_qso:
-            info += f"on {self._current_qso['QSO_DATE']} "
+            info += f"on {date_formatter(self._current_qso['QSO_DATE'])} "
         if 'TIME_ON' in self._current_qso:
             info += f"at {self._current_qso['TIME_ON']} "
         return info.strip()
@@ -468,6 +468,13 @@ class LicwChallenge():
 #  Functions
 # *******************************************************************
 
+def date_formatter(numeric_date):
+    ''' Convert date from integer YYYYMMDD to a user readable string '''
+    day = f"{numeric_date}"
+    # Convert string to ISO YYYY-MM-DD format for date function.
+    day = f"{day[:4]}-{day[4:6]}-{day[6:8]}"
+    return date.fromisoformat(day).strftime('%d %b %y')
+
 def determine_date_range(quarter):
     ''' Function to determine start and end dates for a given quater.
         The quater definition may be of 2 formats:
@@ -533,7 +540,7 @@ def parse_logfile(filenames, quarter):
 
     # Display a list of the validated QSOs
     if quarter:
-        print(f"\nFor the quarter from {start_date} to {end_date}:")
+        print(f"\nFor the quarter from {date_formatter(start_date)} to {date_formatter(end_date)}:")
     print("\n--------------------------------------------------------------------")
     for qso in challenge.validated_qsos:
         number = qso.licw_nr
@@ -546,12 +553,8 @@ def parse_logfile(filenames, quarter):
             points = f"{qso.points} point"
             if qso.total > 1:
                 points += 's'
-        # Convert date from YYYYMMDD to YYYY-MM-DD and hence to nice string
-        qso_day = f"{qso.date}"
-        qso_day = f"{qso_day[:4]}-{qso_day[4:6]}-{qso_day[6:8]}"
-        qso_day = date.fromisoformat(qso_day).strftime('%d %b %y')
-        print(f"{qso_day}   {qso.callsign:10} {qso.name:10} {qso.spc:>3}"
-              f"{number:>8} {qso.band:>5}  {points}")
+        print(f"{date_formatter(qso.date)}   {qso.callsign:10} {qso.name:10}"
+              f"{qso.spc:>3} {number:>8} {qso.band:>5}  {points}")
     print("--------------------------------------------------------------------")
     print(f"\nTotal of {challenge.num_qsos} QSOs with {challenge.num_spc} unique SPCs")
     print(f"Total score = {challenge.total_score}\n")
