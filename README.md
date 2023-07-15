@@ -7,7 +7,7 @@ When making a LICW Challenge contact, there is a minimum set of information that
 but not all of this information is supported by standard ADIF log fields.
 
 I wanted to be able to use my normal logging program to log my Challenge QSOs and the simplest solution
-found was to add this extra information in the QSO note/comment field in a simple and structured way so that this
+found was to add the extra information in the QSO note/comment field in a simple and structured way so that this
 program could then reliably find and extract it in order to calculate the score.
 
 This special text can be in addition to any other notes you enter for a QSO, can be at any position in
@@ -28,7 +28,7 @@ Where:
 ![example QSO entry](images/qso_entry.png)
 
 The special text string may be extended to support additional special bonus points, by
-adding an optional third section containing a comma seperated list of bonus conditions:
+adding an optional third section containing a comma separated list of bonus conditions:
 
 ```
 LICW[SPC:1234xx:EXTRA1,EXTRA2,...]
