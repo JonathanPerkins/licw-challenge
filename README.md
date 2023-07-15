@@ -1,11 +1,16 @@
 # LICW Challenge scoring
-This is a Python script to parse an ADIF log file and calculate the score for the LICW Challenge (see https://licwchallenge.org for more details)
+This is a Python script to parse an ADIF log file and calculate the score for the Long Island CW Club Challenge (see https://licwchallenge.org for more details)
 
 ## Log entry
 
-In order to add the extra LICW Challenge data, it is necessary when logging a challenge QSO
-to add a special text field into the QSO note/comment field in your logging program.
-This can be in addition to any other notes you enter for this QSO, can be at any position in
+When making a LICW Challenge contact, there is a minimum set of information that the participants must exchange,
+but not all of this information is supported by standard ADIF log fields.
+
+I wanted to be able to use my normal logging program to log my Challenge QSOs and the simplest solution
+found was to add this extra information in the QSO note/comment field in a simple and structured way so that this
+program could then reliably find and extract it in order to calculate the score.
+
+This special text can be in addition to any other notes you enter for a QSO, can be at any position in
 the note field and is case insensitive.
 
 The minimum format of this special text string is:
