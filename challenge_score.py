@@ -50,7 +50,22 @@ VALID_BANDS = [
     '6M',
     '2M'
 ]
-        
+
+# Rules for if a contact can be considered 'DX':
+# - SPC has 3 character length, OR:
+# - SPC appears in the SPC_DX table below.
+# Note the SPC table includes the special entry 'DX'
+# just in case a manual over-ride is required!
+SPC_DX = [
+    'AS',
+    'GU',
+    'HI',
+    'CM',
+    'PE',
+    'PR',
+    'VI',
+    'DX'
+]
 
 # *******************************************************************
 #  Classes
@@ -244,7 +259,7 @@ class Qso():
                 if extra in BONUS:
                     self._bonus += BONUS[extra]
             # DX contact?
-            if len(self._spc) == 3 or self._spc.upper() == 'DX':
+            if len(self._spc) == 3 or self._spc in SPC_DX:
                 self._bonus += BONUS['DX']
 
 # *******************************************************************
@@ -521,8 +536,8 @@ def date_formatter(numeric_date):
     return date.fromisoformat(day).strftime('%d %b %y')
 
 def determine_date_range(quarter):
-    ''' Function to determine start and end dates for a given quater.
-        The quater definition may be of 2 formats:
+    ''' Function to determine start and end dates for a given quarter.
+        The quarter definition may one be of 2 formats:
             now           - the current quarter
             [1..4]:[year] - quarter number and 2 or 4 digit year
         Dates are formatted as integers in the format YYYYMMDD
