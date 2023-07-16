@@ -75,6 +75,7 @@ class Qso():
         self._callsign = None
         self._name = None
         self._spc = None
+        self._mode = None
         self._licw_nr = None
         # Base points for QSO
         self._points = 0
@@ -89,7 +90,7 @@ class Qso():
     def is_valid(self):
         ''' Getter to determine if the QSO is valid '''
         # Need all the required fields
-        return self._band and self._callsign and self._name and self._spc and self._licw_nr and self._date
+        return self._band and self._callsign and self._name and self._spc and self._licw_nr and self._date and self._mode and self._mode.upper() == 'CW'
 
     @property
     def callsign(self):
@@ -110,6 +111,11 @@ class Qso():
     def spc(self):
         ''' Getter for SPC '''
         return self._spc
+
+    @property
+    def mode(self):
+        """ Getter for Mode """
+        return self._mode
 
     @property
     def name(self):
@@ -149,6 +155,7 @@ class Qso():
         self._licw_nr = None
         self._bonus_letters = None
         self._date = None
+        self._mode = None
         if 'BAND' in qso_fields:
             self._band = qso_fields['BAND']
         if 'CALL' in qso_fields:
@@ -160,6 +167,9 @@ class Qso():
                 self._date = int(qso_fields['QSO_DATE'])
             except ValueError:
                 pass
+        if 'MODE' in qso_fields:
+            self._mode = qso_fields['MODE']
+
         # The SPC and LICW number should be found in the comment field,
         # formatted with optional bonus letters and optional 3rd
         # field list as: LICW[SPC:1234is:FIRST,F2F]
@@ -206,7 +216,7 @@ class Qso():
                 if extra in BONUS:
                     self._bonus += BONUS[extra]
             # DX contact?
-            if len(self._spc) == 3:
+            if len(self._spc) == 3 or self._spc.upper() == 'DX':
                 self._bonus += BONUS['DX']
 
 # *******************************************************************
