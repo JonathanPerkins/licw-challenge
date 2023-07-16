@@ -577,8 +577,10 @@ def parse_logfile(filenames, quarter):
 
     # Parsing strategy: read file one line at a time, stripping
     # trailing newlines and then pass those to my stream parser.
+    # N.B: ADI files are explicitly not allowed unicode characters
+    #      so OK to open as latin-1 for Windows compatibility.
     for filename in filenames:
-        with open(filename, 'r') as logfile:
+        with open(filename, 'r', encoding='latin-1') as logfile:
             while True:
                 line = logfile.readline()
                 if not line:
