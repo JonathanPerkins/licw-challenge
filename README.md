@@ -115,10 +115,14 @@ Do I need to go back in my log and remove the first contacts LICW[] data?
 __A__: No, the program handles duplicates contacts on any given band and it will automatically
 select the QSO with the highest score. So just log all LICW Challenge QSOs you make.
 
+__Q__: The Challenge website says that if I make a QSO with a non LICW member, all points
+will count if you send that station an email inviting them to join LICW. How do I log this?
+
+__A__: Log the contact as a normal LICW challenge QSO, but with a membership number of zero.
+
 ## TODO
 
 Not essential, but possibly nice to have:
 
-* Only allow QSOs on valid bands
 * Support for VBand QSOs? How would this be done?
 
