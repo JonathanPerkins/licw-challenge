@@ -35,6 +35,23 @@ BONUS = {
     'FIRST': 10
 }
 
+VALID_BANDS = [
+    '160M',
+    '80M',
+    '75M',
+    '60M',
+    '40M',
+    '30M',
+    '20M',
+    '17M',
+    '15M',
+    '12M',
+    '10M',
+    '6M',
+    '2M'
+]
+        
+
 # *******************************************************************
 #  Classes
 # *******************************************************************
@@ -87,10 +104,21 @@ class Qso():
             self.load_qso(qso_fields)
 
     @property
+    def band_is_valid(self):
+        """ The band  is valid """
+        return self._band and self._band.upper() in VALID_BANDS
+
+    @property
+    def mode_is_valid(self):
+        """ The mode is CW """
+        return self._mode and self._mode.upper() == 'CW'
+
+
+    @property
     def is_valid(self):
         ''' Getter to determine if the QSO is valid '''
         # Need all the required fields
-        return self._band and self._callsign and self._name and self._spc and self._licw_nr and self._date and self._mode and self._mode.upper() == 'CW'
+        return self.band_is_valid and self._callsign and self._name and self._spc and self._licw_nr and self._date and self.mode_is_valid
 
     @property
     def callsign(self):
@@ -535,7 +563,7 @@ def parse_logfile(filenames, quarter):
     # Parsing strategy: read file one line at a time, stripping
     # trailing newlines and then pass those to my stream parser.
     for filename in filenames:
-        with open(filename, 'r', encoding='utf-8') as logfile:
+        with open(filename, 'r') as logfile:
             while True:
                 line = logfile.readline()
                 if not line:
